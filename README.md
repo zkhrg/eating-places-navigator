@@ -1,4 +1,4 @@
-# Day 03 - Go Piscine
+# Day 03 - Go Intensive
 
 ## Tasty Discoveries
 
