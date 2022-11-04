@@ -1,4 +1,4 @@
-# Day 03 - Go Intensive
+# Day 03 - Go Boot camp
 
 ## Tasty Discoveries
 
