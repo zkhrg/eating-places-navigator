@@ -49,7 +49,7 @@ Let's think a bit about how these services work and build one of our own, really
 <h2 id="chapter-iv" >Chapter IV</h2>
 <h3 id="ex00">Exercise 00: Loading Data</h3>
 
-There are lots and lots of various databases on the market. But, because we're trying to provide the ability to search for things, let's use [Elasticsearch](https://www.elastic.co/downloads/elasticsearch). All examples provided have been tested on version 7.9.2.
+There are lots and lots of various databases on the market. But, because we're trying to provide the ability to search for things, let's use [Elasticsearch](https://www.elastic.co/downloads/elasticsearch). <!---All examples provided have been tested on version 7.9.2.-->
 
 Elasticsearch is a full text search engine built on top of [Lucene](https://en.wikipedia.org/wiki/Apache_Lucene). It provides an HTTP API that we will be using in this task.
 
@@ -65,8 +65,8 @@ Our provided dataset of restaurants (taken from an Open Data portal) consists of
 Before uploading all entries into the database, let's create an index and a mapping (explicitly specifying data types). Without it Elasticsearch will try to guess field types based on documents provided, and sometimes it won't recognize geopoints.
 
 Here are a couple links to help you get started on things:
-- https://www.elastic.co/guide/en/elasticsearch/reference/7.9/indices-create-index.html
-- https://www.elastic.co/guide/en/elasticsearch/reference/7.9/geo-point.html
+- https://www.elastic.co/guide/en/elasticsearch/reference/8.4/indices-create-index.html
+- https://www.elastic.co/guide/en/elasticsearch/reference/8.4/geo-point.html
 
 Start the database by running `~$ /path/to/elasticsearch/dir/bin/elasticsearch` and let's experiment around.
 
@@ -105,7 +105,7 @@ where `schema.json` looks like this:
 
 Once again, provided cURL commands are just a reference for self-testing, this action should be performed by the Go program you write.
 
-Now you have a dataset to upload. You should use [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/docs-bulk.html) to perform that. All existing Elasticsearch bindings provide wrappers for it, for example, [here is a good example](https://github.com/elastic/go-elasticsearch/blob/master/_examples/bulk/indexer.go) for an official client (keep in mind that you'll need to use client v7 for ES version 7.9, not v8). There are also a couple of third-party clients, choose whichever you prefer.
+Now you have a dataset to upload. You should use [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/docs-bulk.html) to perform that. All existing Elasticsearch bindings provide wrappers for it, for example, [here is a good example](https://github.com/elastic/go-elasticsearch/blob/master/_examples/bulk/indexer.go) for an official client<!--- (keep in mind that you'll need to use client v7 for ES version 7.9, not v8)-->. There are also a couple of third-party clients, choose whichever you prefer.
 
 To check yourself, you may use cURL. So,
 
