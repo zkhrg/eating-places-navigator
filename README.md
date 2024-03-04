@@ -157,7 +157,7 @@ should give you something like this:
 and querying entry by its ID will look like this:
 
 ```
-~$ curl -s -XGET "http://localhost:9200/places/place/1"
+~$ curl -s -XGET "http://localhost:9200/places/_doc/1"
 ```
 
 ```
