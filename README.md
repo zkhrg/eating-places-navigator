@@ -275,7 +275,7 @@ Your HTTP application should run on port 8888, responding with a list of restaur
 
 A "Previous" link should disappear on page 1 and "Next" link should disappear on last page.
 
-IMPORTANT NOTE: You may notice that by default Elasticsearch doesn't allow you to deal with pagination for more than 10000 entries. There are two ways to othercome this - either use a Scroll API (refer to the same link on pagination above) or just raise the limit in index settings specifically for this task. The latter is acceptable for this task, but is not the recommended way to do it in production. The query that will help you to set it is below:
+IMPORTANT NOTE: You may notice that by default Elasticsearch doesn't allow you to deal with pagination for more than 10000 entries. There are two ways to overcome this - either use a Scroll API (refer to the same link on pagination above) or just raise the limit in index settings specifically for this task. The latter is acceptable for this task, but is not the recommended way to do it in production. The query that will help you to set it is below:
 
 ```
 ~$ curl -XPUT -H "Content-Type: application/json" "http://localhost:9200/places/_settings" -d '
