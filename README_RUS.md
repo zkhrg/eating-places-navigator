@@ -47,42 +47,53 @@
 <h2 id="chapter-iv" >Глава IV</h2>
 <h3 id="ex00">Упражнение 00: Загрузка данных</h3>
 
-Очень много разных вариантов базданных на рынки. Но потому что мы пытаемся предоставить возможность поиска, давай использовать [Elasticsearch](https://www.elastic.co/downloads/elasticsearch). <!---All examples provided have been tested on version 7.9.2.-->
+Очень много разных вариантов баз данных на рынке. Но потому что мы пытаемся предоставить возможность поиска, давай использовать [Elasticsearch](https://www.elastic.co/downloads/elasticsearch).
 
 Elasticsearch это полнотекстовый поисковой движок на [Lucene](https://en.wikipedia.org/wiki/Apache_Lucene). Он предоставляет HTTP API который будет использоваться в этом задании.
 
-Our provided dataset of restaurants (taken from an Open Data portal) consists of more than 13 thousands of restaurants in the area of Moscow, Russia (you can put together another similar dataset for any other location you want). Every entry has:
+Наш предоставленный набор данных о ресторанах (взято с Open Data portal) содержит более чем 13 тысяч ресторанов по всей Москве, Росси (ты можешь использовать другой похожий датасет с любой локации которой ты хочешь). Каждая запись состоит из:
 
+```md
 - ID
 - Name
 - Address
 - Phone
 - Longitude
 - Latitude
-
-Before uploading all entries into the database, let's create an index and a mapping (explicitly specifying data types). Without it Elasticsearch will try to guess field types based on documents provided, and sometimes it won't recognize geopoints.
-
-Here are a couple links to help you get started on things:
-- https://www.elastic.co/guide/en/elasticsearch/reference/8.4/indices-create-index.html
-- https://www.elastic.co/guide/en/elasticsearch/reference/8.4/geo-point.html
-
-Start the database by running `~$ /path/to/elasticsearch/dir/bin/elasticsearch` and let's experiment around.
-
-For simplicity, let's use "places" as a name for an index and "place" as a name for an entry. You can create an index using cURL like this:
-
 ```
-~$ curl -XPUT "http://localhost:9200/places"
+RU:
+```md
+* Индивидуальный номер записи
+* Название
+* Адрес
+* Телефон
+* Долгота
+* Широта
 ```
 
-but in this task you should use Go Elasticsearch bindings to do the same thing. Next thing you have to do is to provide type mappings for our data. With cURL it will look like this:
+Перед загрузкой всех данных в базу данных, давай создадим индекс и маппинг (явное указание типов данных). Без этого Elasticsearch будет пытаться угадать типы полей основываясь на представленных данных и иногда он не может распознать геометки.
 
-```
-~$ curl -XPUT http://localhost:9200/places/place/_mapping?include_type_name=true -H "Content-Type: application/json" -d @"schema.json"
+Тут парочка ссылок которые помогут тебе вкатиться в суть происходящего
+* [Создание индексов](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/indices-create-index.html)
+* [Геометки](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/geo-point.html)
+
+Разверни по гайду из `ELASTIC.md` докер контейнер и давай немного поэксперементируем 
+
+Для простоты давай использовать "places" как название для индекса "place" как название записи. Ты можешь создать индекс используя curl:
+
+```sh
+curl -k -XPUT -u {ваш_логин_из_ELASTIC.md}:{ваш_пароль} "https://localhost:9200/places"
 ```
 
-where `schema.json` looks like this:
+однако в задании ты должен использвать Go Elasticsearch бинды для создания этих вещей. Следующее что тебе нужно сделать это предоставить типы для маппинга наших данных. Используя `curl` это будет выглядеть следующим образом:
 
+```sh
+curl -k -XPUT -u {ваш_логин_из_ELASTIC.md}:{ваш_пароль} https://localhost:9200/places/place/_mapping?include_type_name=true -H "Content-Type: application/json" -d @"schema.json"
 ```
+
+где `schema.json` выглядит так:
+
+```json
 {
   "properties": {
     "name": {
@@ -101,19 +112,19 @@ where `schema.json` looks like this:
 }
 ```
 
-Once again, provided cURL commands are just a reference for self-testing, this action should be performed by the Go program you write.
+**Важно**: приведенные `curl` команды это просто референсы для самостоятельного текстирования. Все этим действия долэны быть совершены твоей Go программой.
 
-Now you have a dataset to upload. You should use [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/docs-bulk.html) to perform that. All existing Elasticsearch bindings provide wrappers for it, for example, [here is a good example](https://github.com/elastic/go-elasticsearch/blob/master/_examples/bulk/indexer.go) for an official client<!--- (keep in mind that you'll need to use client v7 for ES version 7.9, not v8)-->. There are also a couple of third-party clients, choose whichever you prefer.
+Сейчас твой набор данных загружен. Ты дожен использовать [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/docs-bulk.html) для совершения этого. Все существующие Elasticsearch бинды предоставляют обертку для этого, как например [тут хороший пример](https://github.com/elastic/go-elasticsearch/blob/master/_examples/bulk/indexer.go) для официального клиента. Есть еще разные обертки, выбери любую какую захочешь.
 
-To check yourself, you may use cURL. So,
+Для проверки себя, ты можешь использовать `curl`.
 
+```sh
+curl -k -u {ваш_логин_из_ELASTIC.md}:{ваш_пароль} -s -XGET "https://localhost:9200/places?pretty"
 ```
-~$ curl -s -XGET "http://localhost:9200/places"
-```
 
-should give you something like this:
+ты должен получить подобный вывод:
 
-```
+```json
 {
   "places": {
     "aliases": {},
@@ -152,13 +163,13 @@ should give you something like this:
 }
 ```
 
-and querying entry by its ID will look like this:
+и запрос записи по ее ID будет выглядеть так:
 
-```
-~$ curl -s -XGET "http://localhost:9200/places/_doc/1"
+```sh
+curl -k -u {ваш_логин_из_ELASTIC.md}:{ваш_пароль} -s -XGET "https://localhost:9200/places/_doc/1?pretty"
 ```
 
-```
+```json
 {
   "_index": "places",
   "_type": "place",
@@ -180,27 +191,27 @@ and querying entry by its ID will look like this:
 }
 ```
 
-Please note, that the entry with ID=1 may be different from the one in dataset if you decided to use goroutines to speed up the process (that's not a requirement in this task though).
+Заметь, что запись с id=1 может отличаться в той что в датасете, если ты решишь использовать горутины для ускорения этого процесса. (это, однако, нет требуется в этом задании)
 
 <h2 id="chapter-v" >Глава V</h2>
-<h3 id="ex01">Упражнение 01: Simplest Interface</h3>
+<h3 id="ex01">Упражнение 01: Простейший интерфейс</h3>
 
-Now let's create an HTML UI for our database. Not much, we just need to render a page with a list of names, addresses and phones so user could see it in a browser.
+Давай создадим HTML UI (Hyper Text Markup Language, User Interface) для нашей базы данных. Скромную, мы прото должны рендерить страничку со списком названий, адресов и телефонов так чтобы пользователь мог увидеть это в браузере.
 
-You should abstract your database behind an interface. To just return the list of entries and be able to [paginate](https://www.elastic.co/guide/en/elasticsearch/reference/current/paginate-search-results.html) through them, this interface is enough:
+Ты должен абстрагировать твою базу данных за интерфейсом. Для простого возвращения списка записий и иметь возможность для пагинации [paginate](https://www.elastic.co/guide/en/elasticsearch/reference/current/paginate-search-results.html) по ним, этому интерфейсу достаточно:
 
-```
+```go
 type Store interface {
-    // returns a list of items, a total number of hits and (or) an error in case of one
+    // возвращает список итемов, а так же количество совпадений и/или ошибку в случае ее возникновения
     GetPlaces(limit int, offset int) ([]types.Place, int, error)
 }
 ```
 
-There should be no Elasticsearch-related imports in `main` package, as all database-related stuff should rest in `db` package inside your project, and you should only use this interface above to interact with it.
+Тут надо что бы не было связанных с Elasticsearch-ем импортов в `main` пакет, так что весь датабазовый движ должен располагаться в пакете `db` внутри твоего проекта и ты должен использовать этот интерфейс для всех взаимодействий.
 
-Your HTTP application should run on port 8888, responding with a list of restaurants and providing a simple pagination over it. So. when querying "http://127.0.0.1:8888/?page=2" (mind the 'page' GET param) you should be getting a page like this:
+Твое HTTP приложение должно работать на 8888 порту, отвечать с списком ресторанов и предоставлять простую пагинацию поверх всего. Так когда делается запрос на "http://localhost:8888?page=2" (page - это GET параметр) должна вернуться страница вида:
 
-```
+```html
 <!doctype html>
 <html>
 <head>
@@ -271,11 +282,14 @@ Your HTTP application should run on port 8888, responding with a list of restaur
 </html>
 ```
 
-A "Previous" link should disappear on page 1 and "Next" link should disappear on last page.
+"Previous" ссылка должна исчезать на страничке 1 и "Next" ссылка должна исчезать на последней странице.
 
-IMPORTANT NOTE: You may notice that by default Elasticsearch doesn't allow you to deal with pagination for more than 10000 entries. There are two ways to overcome this - either use a Scroll API (refer to the same link on pagination above) or just raise the limit in index settings specifically for this task. The latter is acceptable for this task, but is not the recommended way to do it in production. The query that will help you to set it is below:
+**Важно**: Предупреждаю тебя что по умолчанию Elasticsearch не может предоставлять пагинацию для более чем 10000 записей. Тут есть два пути для обхода:
+* Использовать Scroll API
+* Или просто повысить лимит в настройках индекса специально для этого задания.
+Последний вариант подходит для этого задания, однако это не лучший способ для использования в продакшене. Запрос для изменения настроек ниже:
 
-```
+```sh
 ~$ curl -XPUT -H "Content-Type: application/json" "http://localhost:9200/places/_settings" -d '
 {
   "index" : {
@@ -284,18 +298,18 @@ IMPORTANT NOTE: You may notice that by default Elasticsearch doesn't allow you t
 }'
 ```
 
-Also, in case 'page' param is specified with a wrong value (outside [0..last_page] or not numeric) your page should return HTTP 400 error and plain text with an error description:
+Также, в случае если `page` параметр задан неправильным значением (вне [0..последняя страница] или не числом) твоя страница должна возвращать 400 ошибку и обычный текст с описанием проблемы:
 
-```
+```txt
 Invalid 'page' value: 'foo'
 ```
 
 <h2 id="chapter-vi" >Глава VI</h2>
-<h3 id="ex02">Упражнение 02: Proper API</h3>
+<h3 id="ex02">Упражнение 02: Собственный API</h3>
 
-In modern world most applications prefer APIs over just plain HTML. So, in this exercise all you have to do is implement another handler which responds with `Content-Type: application/json` and JSON version of the same thing as in Ex01 (example for http://127.0.0.1:8888/api/places?page=3):
+В современно мире большениство приложений предпочитают API поверх простого HTML. Так что в этом упражнении все что тебе нужно сделать это имплементировать обработчик, который будт отвечать с `Content-Type: application/json` и JSON версией на ту же самую штуку как в Уп01 (например http://127.0.0.1:8888/api/places?page=3):
 
-```
+```json
 {
   "name": "Places",
   "total": 13649,
@@ -407,20 +421,21 @@ In modern world most applications prefer APIs over just plain HTML. So, in this 
 }
 ```
 
-Also, in case 'page' param is specified with a wrong value (outside [0..last_page] or not numeric) your API should respond with a corresponding HTTP 400 error and similar JSON:
+Также, в случае если `page` параметр задан неправильным значением (вне [0..последняя страница] или не числом) твой API должен возвращать 400 ошибку и JSON следующего вида:
 
-```
+
+```json
 {
     "error": "Invalid 'page' value: 'foo'"
 }
 ```
 
 <h2 id="chapter-vii" >Глава VII</h2>
-<h3 id="ex03">Упражнение 03: Closest Restaurants</h3>
+<h3 id="ex03">Упражнение 03: Ближайшие рестораны</h3>
 
-Now let's implement our main piece of functionality - searching for *three* closest restaurants! In order to do that, you'll have to configure sorting for your query:
+Сейчас давай имплементируем основной кусок функционала - поиск **трех** ближайших ресторанов. Для того чтобы это сделать ты должен настроить сортировку для своего запроса:
 
-```
+```json
 "sort": [
     {
       "_geo_distance": {
@@ -438,9 +453,9 @@ Now let's implement our main piece of functionality - searching for *three* clos
 ]
 ```
 
-where "lat" and "lon" are your current coordinates. So, for an URL http://127.0.0.1:8888/api/recommend?lat=55.674&lon=37.666 your application should return JSON like this:
+где "lat" и "lon" это твои текущие координаты. Так для http://127.0.0.1:8888/api/recommend?lat=55.674&lon=37.666 твое приложение должна вернуть JSON вида:
 
-```
+```json
 {
   "name": "Recommendation",
   "places": [
@@ -481,22 +496,22 @@ where "lat" and "lon" are your current coordinates. So, for an URL http://127.0.
 <h2 id="chapter-viii" >Глава VIII</h2>
 <h3 id="ex04">Упражнение 04: JWT</h3>
 
-So, the last (but not least) thing that we have to do is to provide some simple form of authentication. Currently the one of the most popular ways of implementing that for an API is by using [JWT](https://jwt.io/introduction/). Luckily, Go has a pretty good set of tooling to deal with it.
+Так, последнее (не но не менее важное) что мы должны сделать это предоставить какую-нибудь простую форму аутентификации. Сейчас один из популярнейших путей это реализовать это для API используя [JWT](https://jwt.io/introduction/). К счастью, Go имеет отличный набор инструментов для того чтобы с этим справиться.
 
-First, you have to implement an API endpoint http://127.0.0.1:8888/api/get_token which sole purpose will be to generate a token and return it, like this (this is an example, your token will likely be different):
+Первое что тебе нужно сделать это API endpoint http://127.0.0.1:8888/api/get_token преднозначение которого будет генерировать токен и возвращать его (как в примере)
 
-```
+```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiZXhwIjoxNjAxOTc1ODI5LCJuYW1lIjoiTmlrb2xheSJ9.FqsRe0t9YhvEC3hK1pCWumGvrJgz9k9WvhJgO8HsIa8"
 }
 ```
 
-Don't forget to set header 'Content-Type: application/json'.
+Не забудь задать хэдер 'Content-Type: application/json'
 
-Second, you have to protect your `/api/recommend` endpoint with a JWT middleware, that will check the validity of this token.
+Второе что тебе нужно сделать это защитить `/api/recommend` эндпоинт с JWT middleware, который будет проверять валидность токена.
 
-So by default when querying this API from the browser it should now fail with an HTTP 401 error, but work when `Authorization: Bearer <token>` header is specified by the client (you may check this using cURL or Postman).
+Так, по умолчанию когда ты запрашиваешь апи из браузере он дожен фейлить с HTTP 401 ошибкой, но работать когда `Authorization: Bearer <token>` заголовок задан клиентом (ты можешь для проверок использовать `curl` или [Postman](https://www.postman.com/))
 
-This is a simplest way to provide authentication, no need to go deeper in details for now.
+Это простейший путь для предоставления функционала аутентификации, не нужно углубляться в детали на данном этапе.
 
 
