@@ -17,6 +17,36 @@ docker run -d --name elasticsearch --net somenetwork -p 9200:9200 -p 9300:9300 -
 bin/elasticsearch-reset-password -u elastic
 ```
 там создаем пользователя с именем `elastic` и нам генерируют пароль.
+
+копируем клиентский сертификат и проверяем коннект через `curl`
+``` sh
+docker cp <container_name>:/usr/share/elasticsearch/config/certs/http_ca.crt .
+curl --cacert {path_to_http_ca.crt} -u {your_username}:{your_password} https://localhost:9200
+```
+
+он потребуется для коннекта через Go **[elasticsearch go-api](https://www.elastic.co/guide/en/elasticsearch/client/go-api/current/connecting.html#verifying-with-ca)**
+
+и получаем примерно такой ответ: 
+```json
+{
+  "name" : "adc9003f21ab",
+  "cluster_name" : "docker-cluster",
+  "cluster_uuid" : "R3Ra-AkmQ4a7qvcdfmFsLw",
+  "version" : {
+    "number" : "8.4.2",
+    "build_flavor" : "default",
+    "build_type" : "docker",
+    "build_hash" : "89f8c6d8429db93b816403ee75e5c270b43a940a",
+    "build_date" : "2022-09-14T16:26:04.382547801Z",
+    "build_snapshot" : false,
+    "lucene_version" : "9.3.0",
+    "minimum_wire_compatibility_version" : "7.17.0",
+    "minimum_index_compatibility_version" : "7.0.0"
+  },
+  "tagline" : "You Know, for Search"
+}
+```
+
 потом в браузере заходим на <br> 
 **https://localhost:9200** <br>
 и логинимся elastic и пароль который который вам сгенерировало.
