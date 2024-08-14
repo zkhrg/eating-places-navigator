@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/joho/godotenv"
@@ -42,7 +43,7 @@ func InitClient() {
 	}
 }
 
-func CreateIndex(indexName string) error {
+func CreateIndex(indexName string, mapping string) error {
 	exists, err := es.Indices.Exists([]string{indexName})
 	if err != nil {
 		return fmt.Errorf("error check index existence: %s", err)
@@ -51,7 +52,10 @@ func CreateIndex(indexName string) error {
 		return nil
 	}
 
-	res, err := es.Indices.Create(indexName)
+	res, err := es.Indices.Create(
+		indexName,
+		es.Indices.Create.WithBody(strings.NewReader(mapping)),
+	)
 	if err != nil {
 		return fmt.Errorf("error creating index: %s", err)
 	}

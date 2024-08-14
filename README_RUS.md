@@ -114,7 +114,7 @@ curl -k -XPUT -u {ваш_логин_из_ELASTIC.md}:{ваш_пароль} https
 
 **Важно**: приведенные `curl` команды это просто референсы для самостоятельного текстирования. Все этим действия долэны быть совершены твоей Go программой.
 
-Сейчас твой набор данных загружен. Ты дожен использовать [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/docs-bulk.html) для совершения этого. Все существующие Elasticsearch бинды предоставляют обертку для этого, как например [тут хороший пример](https://github.com/elastic/go-elasticsearch/blob/master/_examples/bulk/indexer.go) для официального клиента. Есть еще разные обертки, выбери любую какую захочешь.
+Теперь у тебя есть все для загрузки датасета. Ты дожен использовать [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/docs-bulk.html) для совершения этого. Все существующие Elasticsearch бинды предоставляют обертку для этого, как например [тут хороший пример](https://github.com/elastic/go-elasticsearch/blob/master/_examples/bulk/indexer.go) для официального клиента. Есть еще разные обертки, выбери любую какую захочешь.
 
 Для проверки себя, ты можешь использовать `curl`.
 
