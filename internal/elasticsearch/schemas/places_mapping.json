@@ -4,6 +4,9 @@
   },
   "mappings": {
     "properties": {
+      "id": {
+        "type": "unsigned_long"
+      },
       "name": {
         "type": "text"
       },

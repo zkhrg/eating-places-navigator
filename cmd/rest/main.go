@@ -19,5 +19,7 @@ func main() {
 	}
 	elasticsearch.InitClient()
 	elasticsearch.CreateIndex("places", string(mapping))
+	_ = mapping
 	elasticsearch.Indexing("places", modulePath+"datasets/data.csv")
+	// elasticsearch.GetPageData(0, 100, "places")
 }

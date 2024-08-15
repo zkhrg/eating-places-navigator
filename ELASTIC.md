@@ -52,5 +52,30 @@ curl --cacert {path_to_http_ca.crt} -u {your_username}:{your_password} https://l
 и логинимся elastic и пароль который который вам сгенерировало.
 примерно такой вывод свидетельствует о том что запустилось и работает
 <br>
-<img src="./misc/elasitc_success.png" height=300>
+<img src="./misc/elasitc_success.png" width=450>
 <br>
+
+
+Для использования пагинации нужно использовать не Scroll API
+<br>
+<img src="./misc/scroll_api_deprecated.png" width=450>
+<br>
+
+можно использовать обычный серч и серч афтер:
+`https://localhost:9200/places/_search`<br>
+body:
+```json
+{   
+    "size":1000,
+    "sort": [
+        {"id":"asc"}
+    ],
+    "search_after": [
+        16000
+    ]
+}
+```
+нужно так же использовать PIT для хранения положения скролла [[SEARCH AFTER]](https://www.elastic.co/guide/en/elasticsearch/reference/8.8/paginate-search-results.html#search-after)
+
+для реализации доступа к произвольной странице следует использовать как я понял
+`search_after` и `pit` и в цикле по количеству страниц и по размер страницы итерироваться нужное количество раз.

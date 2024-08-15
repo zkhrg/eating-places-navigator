@@ -1,6 +1,8 @@
 package elasticsearch
 
 import (
+	"bytes"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -16,6 +18,18 @@ import (
 var es *elasticsearch.Client
 
 const batchSize = 500
+
+type SearchResponse struct {
+	Hits struct {
+		Total struct {
+			Value int `json:"value"`
+		} `json:"total"`
+		Hits []struct {
+			ID     string                 `json:"_id"`
+			Source map[string]interface{} `json:"_source"`
+		} `json:"hits"`
+	} `json:"hits"`
+}
 
 func InitClient() {
 	var err error
@@ -196,5 +210,57 @@ func sendBatch(es *elasticsearch.Client, indexName string, batch []map[string]in
 		log.Printf("[%s] error indexing batch: %s", res.Status(), res.String())
 	} else {
 		log.Printf("batch indexed successfully")
+	}
+}
+
+func GetPageData(pageNumber int, pageSize int, indexName string) {
+	from := pageNumber * pageSize
+	_ = from
+	// Создаем тело запроса с параметрами `from` и `size` для пагинации
+	searchBody := map[string]interface{}{
+		"from": from,
+		"size": pageSize,
+		// "sort": []map[string]interface{}{
+		// 	{"address": "asc"},
+		// 	{"tie_breaker_id": "asc"},
+		// },
+		// "query": map[string]interface{}{
+		// 	"match_all": map[string]interface{}{},
+		// },
+	}
+
+	// Кодируем запрос в JSON
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(searchBody); err != nil {
+		log.Fatalf("Error encoding query: %s", err)
+	}
+
+	// Выполняем запрос на поиск
+	res, err := es.Search(
+		es.Search.WithContext(context.Background()),
+		es.Search.WithIndex(indexName),
+		es.Search.WithBody(&buf),
+	)
+	if err != nil {
+		log.Fatalf("Error getting the response: %s", err)
+	}
+	defer res.Body.Close()
+
+	// Декодируем ответ
+	var r SearchResponse
+	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
+		log.Fatalf("Error parsing the response body: %s", err)
+	}
+
+	// Выводим общее количество записей
+	totalRecords := r.Hits.Total.Value
+	fmt.Printf("Total records: %d\n", totalRecords)
+
+	// Выводим количество записей на текущей странице
+	fmt.Printf("Records on page %d: %d\n", pageNumber+1, len(r.Hits.Hits))
+
+	// Обрабатываем записи
+	for _, hit := range r.Hits.Hits {
+		fmt.Printf("Record: %v\n", hit.Source)
 	}
 }
