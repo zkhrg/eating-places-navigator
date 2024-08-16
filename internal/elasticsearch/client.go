@@ -2,12 +2,12 @@ package elasticsearch
 
 import (
 	"bytes"
-	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -21,14 +21,30 @@ const batchSize = 500
 
 type SearchResponse struct {
 	Hits struct {
-		Total struct {
-			Value int `json:"value"`
-		} `json:"total"`
-		Hits []struct {
-			ID     string                 `json:"_id"`
-			Source map[string]interface{} `json:"_source"`
-		} `json:"hits"`
+		Hits []PlacesHit `json:"hits"`
 	} `json:"hits"`
+}
+
+type PlacesHit struct {
+	Source IndexEntry    `json:"_source"`
+	Sort   []interface{} `json:"sort"`
+}
+
+type IndexEntry struct {
+	ID       string   `json:"id"`
+	Address  string   `json:"address"`
+	Location Geopoint `json:"location"`
+	Name     string   `json:"name"`
+	Phone    string   `json:"phone"`
+}
+
+type Geopoint struct {
+	Lat string `json:"lat"`
+	Lon string `json:"lon"`
+}
+
+type CountResponse struct {
+	Count int `json:"count"`
 }
 
 func InitClient() {
@@ -140,6 +156,11 @@ func Indexing(indexName string, CSVFileName string) {
 				if key == "phone" && value != "" && !strings.HasPrefix(value, "+7") {
 					value = "+7" + value
 				}
+				if key == "id" {
+					num, _ := strconv.Atoi(value)
+					num += 1
+					value = fmt.Sprintf("%d", num)
+				}
 				if strings.HasPrefix(key, "location.") {
 					if doc["location"] == nil {
 						doc["location"] = make(map[string]interface{})
@@ -213,54 +234,76 @@ func sendBatch(es *elasticsearch.Client, indexName string, batch []map[string]in
 	}
 }
 
-func GetPageData(pageNumber int, pageSize int, indexName string) {
-	from := pageNumber * pageSize
-	_ = from
-	// Создаем тело запроса с параметрами `from` и `size` для пагинации
-	searchBody := map[string]interface{}{
-		"from": from,
-		"size": pageSize,
-		// "sort": []map[string]interface{}{
-		// 	{"address": "asc"},
-		// 	{"tie_breaker_id": "asc"},
-		// },
-		// "query": map[string]interface{}{
-		// 	"match_all": map[string]interface{}{},
-		// },
-	}
-
-	// Кодируем запрос в JSON
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(searchBody); err != nil {
-		log.Fatalf("Error encoding query: %s", err)
-	}
-
-	// Выполняем запрос на поиск
-	res, err := es.Search(
-		es.Search.WithContext(context.Background()),
-		es.Search.WithIndex(indexName),
-		es.Search.WithBody(&buf),
-	)
-	if err != nil {
-		log.Fatalf("Error getting the response: %s", err)
-	}
-	defer res.Body.Close()
-
-	// Декодируем ответ
+func GetPageData(pageNumber int, pageSize int, indexName string) ([]PlacesHit, int) {
+	searchAfter := 0
 	var r SearchResponse
-	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-		log.Fatalf("Error parsing the response body: %s", err)
+	var rc CountResponse
+	chunkSize := pageSize
+	mult := 1
+	if pageSize < 100 {
+		mult = 100
+	} else if pageSize < 1000 {
+		mult = 10
 	}
+	chunkSize *= mult
 
-	// Выводим общее количество записей
-	totalRecords := r.Hits.Total.Value
-	fmt.Printf("Total records: %d\n", totalRecords)
+	chunkPagesNumber := pageNumber/(chunkSize/pageSize) + 1
+	res_count, _ := es.Count(
+		es.Count.WithIndex(indexName),
+	)
+	if err := json.NewDecoder(res_count.Body).Decode(&rc); err != nil {
+		log.Fatalf("Error parsing the response body: %s", err)
+		return nil, 0
+	}
+	i := 0
+	for ; i < chunkPagesNumber; i++ {
+		searchBody := map[string]interface{}{
+			"search_after": []interface{}{searchAfter},
+			"size":         chunkSize,
+			"sort": []map[string]interface{}{
+				{"id": "asc"},
+			},
+			"track_total_hits": true,
+			"query": map[string]interface{}{
+				"match_all": map[string]interface{}{},
+			},
+		}
 
-	// Выводим количество записей на текущей странице
-	fmt.Printf("Records on page %d: %d\n", pageNumber+1, len(r.Hits.Hits))
+		var buf bytes.Buffer
+		if err := json.NewEncoder(&buf).Encode(searchBody); err != nil {
+			log.Fatalf("Error encoding query: %s", err)
+		}
+
+		res, err := es.Search(
+			es.Search.WithIndex(indexName),
+			es.Search.WithBody(&buf),
+		)
+		if err != nil {
+			log.Fatalf("Error getting the response: %s", err)
+		}
+		defer res.Body.Close()
+
+		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
+			log.Fatalf("Error parsing the response body: %s", err)
+			return nil, 0
+		}
+		searchAfter = int(r.Hits.Hits[len(r.Hits.Hits)-1].Sort[0].(float64))
+	}
 
 	// Обрабатываем записи
-	for _, hit := range r.Hits.Hits {
-		fmt.Printf("Record: %v\n", hit.Source)
+	start := (pageSize * (pageNumber - 1)) % chunkSize
+	end := start + pageSize
+
+	if end >= rc.Count%chunkSize {
+		end = (rc.Count % chunkSize) - 1
 	}
+	// вместо вывода можно просто вовзращать из функции ссылкой
+	// for _, hit := range r.Hits.Hits[start:end] {
+	// 	fmt.Printf("Record: %v %v\n", hit.Source, hit.Sort[0])
+	// }
+	pages := rc.Count / pageSize
+	if rc.Count%pageSize != 0 {
+		pages += 1
+	}
+	return r.Hits.Hits[start:end], rc.Count
 }

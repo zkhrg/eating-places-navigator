@@ -2,10 +2,12 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/zkhrg/go_day03/internal/elasticsearch"
+	"github.com/zkhrg/go_day03/internal/httpserver"
 )
 
 func main() {
@@ -21,5 +23,10 @@ func main() {
 	elasticsearch.CreateIndex("places", string(mapping))
 	_ = mapping
 	elasticsearch.Indexing("places", modulePath+"datasets/data.csv")
-	// elasticsearch.GetPageData(0, 100, "places")
+	// elasticsearch.GetPageData(13444, 1, "places")
+
+	httpserver.RegisterRoutes()
+
+	http.ListenAndServe("localhost:8888", nil)
+
 }

@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Places</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+  <h5>Total: {{.Total}}</h5>
+  <ul>
+    {{range .Items}}
+    <li>
+      <div>{{.Source.Name}}</div>
+      <div>{{.Source.Address}}</div>
+      <div>{{.Source.Phone}}</div>
+    </li>
+    {{end}}
+  </ul>
+  <a href="/?page=1">First</a>
+  {{if ne .PrevPage 0}}<a href="/?page={{.PrevPage}}">Previous</a>{{end}}
+  {{if gt .NextPage .LastPage}}
+  {{else}}
+  <a href="/?page={{.NextPage}}">Next</a>
+  {{end}}
+  <a href="/?page={{.LastPage}}">Last</a>
+</body>
+
+</html>
