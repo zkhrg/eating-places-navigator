@@ -234,11 +234,14 @@ func sendBatch(es *elasticsearch.Client, indexName string, batch []map[string]in
 	}
 }
 
-func GetPageData(pageNumber int, pageSize int, indexName string) ([]PlacesHit, int) {
+func GetPageData(pageNumber int, pageSize int, indexName string) []PlacesHit {
 	searchAfter := 0
 	var r SearchResponse
-	var rc CountResponse
 	chunkSize := pageSize
+	recordsCount := CountIndexRecords(indexName)
+	if recordsCount == 0 {
+		return nil
+	}
 	mult := 1
 	if pageSize < 100 {
 		mult = 100
@@ -248,15 +251,8 @@ func GetPageData(pageNumber int, pageSize int, indexName string) ([]PlacesHit, i
 	chunkSize *= mult
 
 	chunkPagesNumber := pageNumber/(chunkSize/pageSize) + 1
-	res_count, _ := es.Count(
-		es.Count.WithIndex(indexName),
-	)
-	if err := json.NewDecoder(res_count.Body).Decode(&rc); err != nil {
-		log.Fatalf("Error parsing the response body: %s", err)
-		return nil, 0
-	}
-	i := 0
-	for ; i < chunkPagesNumber; i++ {
+
+	for i := 0; i < chunkPagesNumber; i++ {
 		searchBody := map[string]interface{}{
 			"search_after": []interface{}{searchAfter},
 			"size":         chunkSize,
@@ -285,25 +281,33 @@ func GetPageData(pageNumber int, pageSize int, indexName string) ([]PlacesHit, i
 
 		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
 			log.Fatalf("Error parsing the response body: %s", err)
-			return nil, 0
+			return nil
 		}
 		searchAfter = int(r.Hits.Hits[len(r.Hits.Hits)-1].Sort[0].(float64))
 	}
 
-	// Обрабатываем записи
 	start := (pageSize * (pageNumber - 1)) % chunkSize
 	end := start + pageSize
 
-	if end >= rc.Count%chunkSize {
-		end = (rc.Count % chunkSize) - 1
+	if end >= recordsCount%chunkSize {
+		end = (recordsCount % chunkSize) - 1
 	}
-	// вместо вывода можно просто вовзращать из функции ссылкой
-	// for _, hit := range r.Hits.Hits[start:end] {
-	// 	fmt.Printf("Record: %v %v\n", hit.Source, hit.Sort[0])
-	// }
-	pages := rc.Count / pageSize
-	if rc.Count%pageSize != 0 {
+
+	pages := recordsCount / pageSize
+	if recordsCount%pageSize != 0 {
 		pages += 1
 	}
-	return r.Hits.Hits[start:end], rc.Count
+	return r.Hits.Hits[start:end]
+}
+
+func CountIndexRecords(indexName string) int {
+	var rc CountResponse
+	res_count, _ := es.Count(
+		es.Count.WithIndex(indexName),
+	)
+	if err := json.NewDecoder(res_count.Body).Decode(&rc); err != nil {
+		log.Fatalf("error parsing the response body count: %s", err)
+		return 0
+	}
+	return rc.Count
 }
