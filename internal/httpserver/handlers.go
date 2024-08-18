@@ -1,12 +1,18 @@
 package httpserver
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"text/template"
+	"time"
 
 	"github.com/zkhrg/go_day03/internal/elasticsearch"
 )
@@ -38,6 +44,25 @@ type PlaceSchema struct {
 		Lat float64 `json:"lat"`
 		Lon float64 `json:"lon"`
 	} `json:"location"`
+}
+
+// Структура заголовка JWT
+type JWTHeader struct {
+	Alg string `json:"alg"`
+	Typ string `json:"typ"`
+}
+
+// Структура полезной нагрузки JWT (claims)
+type JWTClaims struct {
+	Username string `json:"username"`
+	Exp      int64  `json:"exp"`
+}
+
+// Секретный ключ для подписи JWT
+var jwtKey = []byte(os.Getenv("SECRET_KEY"))
+
+func base64Encode(data []byte) string {
+	return base64.RawURLEncoding.EncodeToString(data)
 }
 
 // я знаю что это не лучшее решение и можно иначе кэшировать страницы
@@ -178,4 +203,125 @@ func validateLatLonParams(lat string, lon string, w http.ResponseWriter) (float6
 	}
 	w.Write([]byte("lat or lon argument no provided"))
 	return 0, 0, errors.New("lat or lon argument no provided")
+}
+
+func createJWT(username string) (string, error) {
+	// Создание заголовка JWT
+	header := JWTHeader{
+		Alg: "HS256",
+		Typ: "JWT",
+	}
+	headerBytes, err := json.Marshal(header)
+	if err != nil {
+		return "", err
+	}
+	headerEncoded := base64Encode(headerBytes)
+
+	// Создание полезной нагрузки (claims)
+	claims := JWTClaims{
+		Username: username,
+		Exp:      time.Now().Add(5 * time.Minute).Unix(),
+	}
+	claimsBytes, err := json.Marshal(claims)
+	if err != nil {
+		return "", err
+	}
+	claimsEncoded := base64Encode(claimsBytes)
+
+	// Формирование unsigned-токена
+	unsignedToken := fmt.Sprintf("%s.%s", headerEncoded, claimsEncoded)
+
+	// Создание подписи с использованием HMAC-SHA256
+	h := hmac.New(sha256.New, jwtKey)
+	h.Write([]byte(unsignedToken))
+	signature := base64Encode(h.Sum(nil))
+
+	// Формирование итогового токена
+	token := fmt.Sprintf("%s.%s", unsignedToken, signature)
+	return token, nil
+}
+
+func generateTokenHandler(w http.ResponseWriter, r *http.Request) {
+	username := r.URL.Query().Get("username")
+	if username == "" {
+		http.Error(w, "Missing username", http.StatusBadRequest)
+		return
+	}
+
+	token, err := createJWT(username)
+	if err != nil {
+		http.Error(w, "Error generating token", http.StatusInternalServerError)
+		return
+	}
+
+	// Возвращаем токен клиенту
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"token": token})
+}
+
+func protectedEndpoint(w http.ResponseWriter, r *http.Request) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+		return
+	}
+
+	// Извлечение токена из заголовка Authorization
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		http.Error(w, "Invalid Authorization header format", http.StatusUnauthorized)
+		return
+	}
+	token := parts[1]
+
+	// Проверка токена
+	claims, err := validateJWT(token)
+	if err != nil {
+		http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	// Если токен валиден, предоставляем доступ к защищенному ресурсу
+	w.Write([]byte(fmt.Sprintf("Hello, %s! You have access to the protected endpoint.", claims.Username)))
+}
+
+func validateJWT(token string) (*JWTClaims, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return nil, errors.New("invalid token format")
+	}
+
+	headerAndClaims := strings.Join(parts[:2], ".")
+	signatureProvided := parts[2]
+
+	// Верификация подписи
+	h := hmac.New(sha256.New, jwtKey)
+	h.Write([]byte(headerAndClaims))
+	signatureExpected := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
+
+	if signatureProvided != signatureExpected {
+		return nil, errors.New("invalid token signature")
+	}
+
+	// Декодирование claims
+	claimsBytes, err := base64Decode(parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	var claims JWTClaims
+	if err := json.Unmarshal(claimsBytes, &claims); err != nil {
+		return nil, err
+	}
+
+	// Проверка срока действия токена
+	if time.Now().Unix() > claims.Exp {
+		return nil, errors.New("token expired")
+	}
+
+	return &claims, nil
+}
+
+func base64Decode(data string) ([]byte, error) {
+	return base64.RawURLEncoding.DecodeString(data)
 }

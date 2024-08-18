@@ -7,5 +7,6 @@ func RegisterRoutes() {
 	http.HandleFunc("/", StartPageHandler)
 	http.HandleFunc("/api/", SimpleAPIHandler)
 	http.HandleFunc("/api/recommend/", APIRecommendHandler)
-	http.HandleFunc("/api/get_token/", APIRecommendHandler)
+	http.HandleFunc("/api/get_token/", generateTokenHandler)
+	http.HandleFunc("/protected_endpoint/", protectedEndpoint)
 }
