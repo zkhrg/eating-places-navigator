@@ -31,7 +31,7 @@ type PlacesHit struct {
 }
 
 type IndexEntry struct {
-	ID       string   `json:"id"`
+	ID       int      `json:"id"`
 	Address  string   `json:"address"`
 	Location Geopoint `json:"location"`
 	Name     string   `json:"name"`
@@ -39,8 +39,8 @@ type IndexEntry struct {
 }
 
 type Geopoint struct {
-	Lat string `json:"lat"`
-	Lon string `json:"lon"`
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
 }
 
 type CountResponse struct {
@@ -159,7 +159,8 @@ func Indexing(indexName string, CSVFileName string) {
 				if key == "id" {
 					num, _ := strconv.Atoi(value)
 					num += 1
-					value = fmt.Sprintf("%d", num)
+					doc[key] = num
+					continue
 				}
 				if strings.HasPrefix(key, "location.") {
 					if doc["location"] == nil {
@@ -167,7 +168,8 @@ func Indexing(indexName string, CSVFileName string) {
 					}
 					locMap := doc["location"].(map[string]interface{})
 					locKey := strings.TrimPrefix(key, "location.")
-					locMap[locKey] = value
+					valueFloat, _ := strconv.ParseFloat(value, 64)
+					locMap[locKey] = valueFloat
 				} else {
 					doc[key] = value
 				}
@@ -203,7 +205,7 @@ func sendBatch(es *elasticsearch.Client, indexName string, batch []map[string]in
 	for _, doc := range batch {
 
 		// Формируем метаданные для действия индексации с указанием идентификатора
-		meta := []byte(fmt.Sprintf(`{ "index" : { "_id" : "%s" } }`, doc["id"]))
+		meta := []byte(fmt.Sprintf(`{ "index" : { "_id" : %d } }`, doc["id"]))
 
 		// Преобразуем документ в JSON
 		data, _ := json.Marshal(doc)
@@ -310,4 +312,44 @@ func CountIndexRecords(indexName string) int {
 		return 0
 	}
 	return rc.Count
+}
+
+func GetNearestPlaces(lat float64, lon float64, indexName string) []PlacesHit {
+	fmt.Println(lat, lon)
+	searchBody := map[string]interface{}{
+		"size": 3,
+		"sort": []map[string]interface{}{
+			{"_geo_distance": map[string]interface{}{
+				"location": map[string]interface{}{
+					"lat": lat,
+					"lon": lon,
+				},
+				"order":           "asc",
+				"unit":            "km",
+				"mode":            "min",
+				"distance_type":   "arc",
+				"ignore_unmapped": true,
+			}},
+		},
+	}
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(searchBody); err != nil {
+		log.Fatalf("Error encoding query: %s", err)
+	}
+
+	res, err := es.Search(
+		es.Search.WithIndex(indexName),
+		es.Search.WithBody(&buf),
+	)
+	if err != nil {
+		log.Fatalf("Error getting the response: %s", err)
+	}
+	defer res.Body.Close()
+
+	var r SearchResponse
+	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
+		log.Fatalf("Error parsing the response body: %s", err)
+		return nil
+	}
+	return r.Hits.Hits
 }

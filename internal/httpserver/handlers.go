@@ -121,17 +121,14 @@ func SimpleAPIHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	data := elasticsearch.GetPageData(page, pageSize, "places")
 	for _, v := range data {
-		id, _ := strconv.Atoi(v.Source.ID)
 		ps := PlaceSchema{
-			ID:      id,
+			ID:      v.Source.ID,
 			Name:    v.Source.Name,
 			Address: v.Source.Address,
 			Phone:   v.Source.Phone,
 		}
-		lat, _ := strconv.ParseFloat(v.Source.Location.Lat, 64)
-		lon, _ := strconv.ParseFloat(v.Source.Location.Lon, 64)
-		ps.Location.Lat = lat
-		ps.Location.Lon = lon
+		ps.Location.Lat = v.Source.Location.Lat
+		ps.Location.Lon = v.Source.Location.Lon
 		pas.Places = append(pas.Places, ps)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -151,4 +148,34 @@ func validatePageParam(page string, pages int, w http.ResponseWriter) (int, erro
 	}
 	w.Write([]byte("no page argument provided"))
 	return 0, errors.New("no page argument provided")
+}
+
+func APIRecommendHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("405 - Method Not Allowed"))
+		return
+	}
+	lat, lon, err := validateLatLonParams(r.URL.Query().Get("lat"), r.URL.Query().Get("lon"), w)
+	if err != nil {
+		return
+	}
+	response := elasticsearch.GetNearestPlaces(lat, lon, "places")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+func validateLatLonParams(lat string, lon string, w http.ResponseWriter) (float64, float64, error) {
+	if lat != "" && lon != "" {
+		latFloat, latErr := strconv.ParseFloat(lat, 64)
+		lonFloat, lonErr := strconv.ParseFloat(lon, 64)
+		if latErr != nil || lonErr != nil {
+			w.Write([]byte("Invalid value"))
+			return 0, 0, errors.New("invalid page value")
+		}
+		return latFloat, lonFloat, nil
+	}
+	w.Write([]byte("lat or lon argument no provided"))
+	return 0, 0, errors.New("lat or lon argument no provided")
 }
