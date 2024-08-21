@@ -11,6 +11,10 @@ type Handlers struct {
 	home *template.Template
 }
 
+type Store interface {
+	GetPlaces(pageNumber, pageSize int) ([]places.PlaceModel, errr)
+}
+
 // не понял как это имплементировать на стандартный пакет,
 // так что трогать не буду пока
 // func (h *Handlers) routes() {}
