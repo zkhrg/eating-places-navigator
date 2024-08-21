@@ -3,6 +3,7 @@ package configs
 import (
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/zkhrg/go_day03/internal/pkg/elasticsearch"
 )
 
@@ -45,6 +46,7 @@ func loadEnv() env {
 // New возвращает новый инстанс конфига со всеми необходимыми
 // зависимостями инициализованно
 func New() (*Configs, error) {
+	godotenv.Load()
 	return &Configs{
 		Environment: loadEnv(),
 		AppName:     os.Getenv("APP_NAME"),
