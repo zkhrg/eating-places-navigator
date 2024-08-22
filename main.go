@@ -24,7 +24,7 @@ func main() {
 		fmt.Printf("cannot create new es client\n")
 	}
 
-	placesAPI := api.New(places.NewElasticsearchStore(es, cfgs.PlacesElasticsearchIndex()))
+	placesAPI := api.NewStoreAPI(places.NewElasticsearchStore(es, cfgs.PlacesElasticsearchIndex()))
 	mainMux := http.NewServeMux()
 	myHttp.AddPlacesRoutes(placesAPI, mainMux)
 
