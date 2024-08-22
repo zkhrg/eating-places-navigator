@@ -10,7 +10,11 @@ import (
 
 type contextKey string
 
-const PageContextKey contextKey = "page"
+const (
+	PageContextKey contextKey = "page"
+	LatContextKey  contextKey = "lat"
+	LonContextKey  contextKey = "lon"
+)
 
 func ChainMiddleware(handler http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
 	// Проходим по всем миддлварям в обратном порядке, чтобы
@@ -45,4 +49,48 @@ func PaginationMiddleware(a *api.API) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func LatLonMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Получаем значение параметров `lat` и `lon`
+		latParam := r.URL.Query().Get("lat")
+		lonParam := r.URL.Query().Get("lon")
+
+		// Проверяем наличие параметров `lat` и `lon`
+		if latParam == "" || lonParam == "" {
+			http.Error(w, "Missing 'lat' or 'lon' parameter", http.StatusBadRequest)
+			return
+		}
+
+		// Преобразуем параметры `lat` и `lon` в float64
+		lat, err := strconv.ParseFloat(latParam, 64)
+		if err != nil {
+			http.Error(w, "'lat' parameter must be a valid float", http.StatusBadRequest)
+			return
+		}
+
+		lon, err := strconv.ParseFloat(lonParam, 64)
+		if err != nil {
+			http.Error(w, "'lon' parameter must be a valid float", http.StatusBadRequest)
+			return
+		}
+
+		// Передаем параметры `lat` и `lon` в контексте
+		ctx := context.WithValue(r.Context(), LatContextKey, lat)
+		ctx = context.WithValue(ctx, LonContextKey, lon)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func GetMethodMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

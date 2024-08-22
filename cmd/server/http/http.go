@@ -6,22 +6,27 @@ import (
 	"github.com/zkhrg/go_day03/internal/api"
 )
 
-func NewRouter(a *api.API) *http.ServeMux {
-	mux := http.NewServeMux()
-
+func AddPlacesRoutes(a *api.API, mux *http.ServeMux) {
 	// Создаем цепочку миддлварей и передаем API через замыкание
-	HTMLpaginatedChain := ChainMiddleware(
-		HTMLPageHandler(a), // Передаем API в хендлер
-		PaginationMiddleware(a),
+	HTMLPaginatedChain := ChainMiddleware(
+		HTMLPageHandler(a),      // Передаем API в хендлер html-ки
+		GetMethodMiddleware,     // первое что мы делаем это миддлеварь на гет запрос
+		PaginationMiddleware(a), // затем проверяем что у нас предоставлен page
 	)
 
-	JSONpaginatedChain := ChainMiddleware(
+	JSONPaginatedChain := ChainMiddleware(
 		JSONPageHandler(a),
+		GetMethodMiddleware,
 		PaginationMiddleware(a),
 	)
 
-	mux.Handle("GET /api/places", JSONpaginatedChain)
-	mux.Handle("GET /", HTMLpaginatedChain)
+	JSONRecommendChain := ChainMiddleware(
+		NearestPlacesHandler(a),
+		GetMethodMiddleware,
+		LatLonMiddleware,
+	)
 
-	return mux
+	mux.Handle("/api/recommend", JSONRecommendChain)
+	mux.Handle("/api/places", JSONPaginatedChain)
+	mux.Handle("/", HTMLPaginatedChain)
 }

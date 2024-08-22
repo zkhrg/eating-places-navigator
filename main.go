@@ -18,15 +18,18 @@ func main() {
 		// need to handle this case
 		return
 	}
+
 	es, err := elasticsearch.NewClient(cfgs.Elasticsearch())
 	if err != nil {
 		fmt.Printf("cannot create new es client\n")
 	}
-	placesAPI := api.New(places.NewElasticsearchStore(es, cfgs.PlacesElasticsearchIndex()))
-	mux := myHttp.NewRouter(placesAPI) // Создаем роутер с API
 
-	log.Println("Starting server on :8080")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	placesAPI := api.New(places.NewElasticsearchStore(es, cfgs.PlacesElasticsearchIndex()))
+	mainMux := http.NewServeMux()
+	myHttp.AddPlacesRoutes(placesAPI, mainMux)
+
+	log.Println("Starting server on :8888")
+	if err := http.ListenAndServe(":8888", mainMux); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }

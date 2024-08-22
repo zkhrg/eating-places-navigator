@@ -6,6 +6,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 )
 
+const batchSize = 500
+
 type Config struct {
 	Address  string
 	Username string

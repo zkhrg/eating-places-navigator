@@ -1,4 +1,4 @@
-package index
+package indices
 
 type Index struct {
 	Name     string

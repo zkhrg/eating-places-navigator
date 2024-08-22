@@ -12,10 +12,11 @@ type API struct {
 
 type Store interface {
 	GetPlacesByPageParams(ctx context.Context, pageNumber int, pageSize int) ([]places.Place, error)
+	GetNearestPlaces(lat, lon float64) ([]places.Place, error)
 	GetTotalRecords() int
 }
 
-func New(s Store) *API {
+func NewStoreAPI(s Store) *API {
 	return &API{
 		Store: s,
 	}
