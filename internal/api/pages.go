@@ -17,15 +17,25 @@ type Page struct {
 }
 
 func (a *API) GetPage(ctx context.Context, pageNumber int, pageSize int) (Page, error) {
-	// дергает метод из эластика и просто его возвращает
+	// дергает метод из строа и просто его возвращает
 	places, err := a.Store.GetPlacesByPageParams(ctx, pageNumber, pageSize)
 	if err != nil {
 		fmt.Println("hanling error at getpage")
 	}
 	total := a.Store.GetTotalRecords()
 	return Page{
-		Places: places,
-		Total:  total,
-		// PrevPage: ,
+		Places:   places,
+		Total:    total,
+		PrevPage: pageNumber - 1,
+		NextPage: pageNumber + 1,
+		LastPage: GetPagesCount(pageSize, total),
 	}, nil
+}
+
+func GetPagesCount(pageSize, recordsCount int) int {
+	pages := recordsCount / pageSize
+	if recordsCount%pageSize != 0 {
+		pages += 1
+	}
+	return pages
 }

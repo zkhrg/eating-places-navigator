@@ -1,10 +1,11 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 
+	myHttp "github.com/zkhrg/go_day03/cmd/server/http"
 	"github.com/zkhrg/go_day03/internal/api"
 	"github.com/zkhrg/go_day03/internal/configs"
 	"github.com/zkhrg/go_day03/internal/pkg/elasticsearch"
@@ -12,7 +13,6 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
 	cfgs, err := configs.New()
 	if err != nil {
 		// need to handle this case
@@ -22,9 +22,11 @@ func main() {
 	if err != nil {
 		fmt.Printf("cannot create new es client\n")
 	}
-	placesStore := places.NewElasticsearchStore(es, cfgs.PlacesElasticsearchIndex())
-	placesAPI := api.New(placesStore)
-	page, _ := placesAPI.GetPage(ctx, 1, 5)
-	prettyPage, _ := json.MarshalIndent(page, "", "    ")
-	fmt.Println(string(prettyPage))
+	placesAPI := api.New(places.NewElasticsearchStore(es, cfgs.PlacesElasticsearchIndex()))
+	mux := myHttp.NewRouter(placesAPI) // Создаем роутер с API
+
+	log.Println("Starting server on :8080")
+	if err := http.ListenAndServe(":8080", mux); err != nil {
+		log.Fatalf("Server failed: %v", err)
+	}
 }

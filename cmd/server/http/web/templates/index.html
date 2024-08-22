@@ -11,11 +11,11 @@
 <body>
   <h5>Total: {{.Total}}</h5>
   <ul>
-    {{range .Items}}
+    {{range .Places}}
     <li>
-      <div>{{.Source.Name}}</div>
-      <div>{{.Source.Address}}</div>
-      <div>{{.Source.Phone}}</div>
+      <div>{{.Name}}</div>
+      <div>{{.Address}}</div>
+      <div>{{.Phone}}</div>
     </li>
     {{end}}
   </ul>

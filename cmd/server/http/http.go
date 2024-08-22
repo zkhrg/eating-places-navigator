@@ -1,23 +1,27 @@
 package http
 
 import (
-	"log"
 	"net/http"
-	"your_project/internal/configs"
-	"your_project/pkg/factory"
+
+	"github.com/zkhrg/go_day03/internal/api"
 )
 
-func StartHTTPServer() {
-	cfg := configs.LoadConfig()
-
-	store, err := factory.NewStore(cfg)
-	if err != nil {
-		log.Fatalf("Error initializing store: %v", err)
-	}
-
+func NewRouter(a *api.API) *http.ServeMux {
 	mux := http.NewServeMux()
-	RegisterHandlers(mux, store)
 
-	log.Println("Starting HTTP server on :8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	// Создаем цепочку миддлварей и передаем API через замыкание
+	HTMLpaginatedChain := ChainMiddleware(
+		HTMLPageHandler(a), // Передаем API в хендлер
+		PaginationMiddleware(a),
+	)
+
+	JSONpaginatedChain := ChainMiddleware(
+		JSONPageHandler(a),
+		PaginationMiddleware(a),
+	)
+
+	mux.Handle("GET /api/places", JSONpaginatedChain)
+	mux.Handle("GET /", HTMLpaginatedChain)
+
+	return mux
 }

@@ -109,11 +109,6 @@ func calcStartEndForPage(pageSize, pageNumber, chunkSize, recordsCount int) (int
 	if end >= recordsCount%chunkSize {
 		end = (recordsCount % chunkSize) - 1
 	}
-
-	pages := recordsCount / pageSize
-	if recordsCount%pageSize != 0 {
-		pages += 1
-	}
 	return start, end
 }
 
