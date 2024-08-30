@@ -1,0 +1,25 @@
+version: '3'
+services:
+  elasticsearch:
+    image: elasticsearch:8.4.2
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=docker-cluster
+      - network.host=0.0.0.0
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=secure_password
+      - xpack.security.enabled=true
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+volumes:
+  esdata:
+    driver: local

@@ -1,7 +1,9 @@
 package elasticsearch
 
 import (
+	"crypto/tls"
 	"fmt"
+	"net/http"
 
 	"github.com/elastic/go-elasticsearch/v8"
 )
@@ -16,11 +18,18 @@ type Config struct {
 }
 
 func NewClient(cfg *Config) (*elasticsearch.Client, error) {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
+	transport := &http.Transport{
+		TLSClientConfig: tlsConfig,
+	}
 	es, err := elasticsearch.NewClient(elasticsearch.Config{
 		Addresses: []string{cfg.Address},
 		Username:  cfg.Username,
 		Password:  cfg.Password,
-		CACert:    cfg.Cert,
+		Transport: transport,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create elasticsearch client: %v", err)

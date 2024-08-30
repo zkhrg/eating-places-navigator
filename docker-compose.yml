@@ -1,0 +1,47 @@
+version: '3'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8888:8888"
+    depends_on:
+      - elasticsearch
+    environment:
+      - ES_USERNAME=elastic
+      - ES_PASSWORD=secure_password
+      - ES_ADDRESS=http://elasticsearch:9200
+      - ENV=local
+      - APP_VERSION=v1.0.0
+      - APP_NAME=go_day03_server
+
+  elasticsearch:
+    image: elasticsearch:8.4.2
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=docker-cluster
+      - network.host=0.0.0.0
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=secure_password
+      - xpack.security.enabled=true
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health?wait_for_status=green&timeout=1s" ]
+      interval: 10s
+      retries: 10
+      start_period: 1m
+      timeout: 10s
+
+volumes:
+  esdata:
+    driver: local
