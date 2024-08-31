@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	myHttp "github.com/zkhrg/go_day03/cmd/server/http"
 	"github.com/zkhrg/go_day03/internal/api"
@@ -15,13 +16,14 @@ import (
 func main() {
 	cfgs, err := configs.New()
 	if err != nil {
-		// need to handle this case
 		return
 	}
 
 	es, err := elasticsearch.NewClient(cfgs.Elasticsearch())
-	if err != nil {
-		fmt.Printf("cannot create new es client\n")
+	for err != nil {
+		fmt.Printf("cannot create new es client retry after 5 sec\n")
+		time.Sleep(5 * time.Second)
+		es, err = elasticsearch.NewClient(cfgs.Elasticsearch())
 	}
 	ess := places.NewElasticsearchStore(es, cfgs.PlacesElasticsearchIndex())
 	ess.CreatePlacesIndex()

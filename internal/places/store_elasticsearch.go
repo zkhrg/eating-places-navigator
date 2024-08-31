@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
 )
@@ -203,24 +204,32 @@ type IndexMappingsProperties struct {
 const batchSize = 500
 
 func (ess *esstore) CreatePlacesIndex() {
-	index := Index{
-		Index: "places",
-		Settings: IndexSettings{
-			NumberOfShards:   5,
-			NumberOfReplicas: 2,
-		},
-		Mappings: IndexMappings{
-			Properties: IndexMappingsProperties{
-				ID:       map[string]string{"type": "keyword"},
-				Name:     map[string]string{"type": "text"},
-				Address:  map[string]string{"type": "text"},
-				Phone:    map[string]string{"type": "keyword"},
-				Location: map[string]string{"type": "geo_point"},
-			},
-		},
-	}
+	indexBody := strings.NewReader(`{
+	  "settings": {
+	    "number_of_shards": 5
+	  },
+	  "mappings": {
+			"properties": {
+				"id": {
+					"type": "unsigned_long"
+				},
+				"name": {
+					"type": "text"
+				},
+				"address": {
+					"type": "text"
+				},
+				"phone": {
+					"type": "text"
+				},
+				"location": {
+					"type": "geo_point"
+				}
+			}
+  	}
+	}`)
 
-	ess.createIndex(index)
+	ess.createIndex(indexBody)
 }
 
 func (ess *esstore) DeletePlacesIndex() {
@@ -352,10 +361,13 @@ func (ess *esstore) sendBatch(batch []map[string]interface{}) {
 	}
 }
 
-func (ess *esstore) createIndex(index Index) {
-	indexExists, err := ess.esdriver.Indices.Exists([]string{index.Index})
-	if err != nil {
-		log.Fatalf("Error checking if index exists: %s", err)
+// ТАК ДЕЛАТЬ НЕ НАДО НО МНЕ ОЧЕНЬ ЗАХОТЕЛОСБ
+func (ess *esstore) createIndex(index *strings.Reader) {
+	indexExists, err := ess.esdriver.Indices.Exists([]string{ess.indexName})
+	for err != nil {
+		log.Printf("Error checking if index exists: %s", err)
+		indexExists, err = ess.esdriver.Indices.Exists([]string{ess.indexName})
+		time.Sleep(5 * time.Second)
 	}
 	defer indexExists.Body.Close()
 
@@ -364,14 +376,9 @@ func (ess *esstore) createIndex(index Index) {
 		return
 	}
 
-	settingsJSON, err := json.Marshal(index.Settings)
-	if err != nil {
-		log.Fatalf("Error marshalling index settings: %s", err)
-	}
-
 	createIndexResponse, err := ess.esdriver.Indices.Create(
-		index.Index,
-		ess.esdriver.Indices.Create.WithBody(bytes.NewReader(settingsJSON)),
+		ess.indexName,
+		ess.esdriver.Indices.Create.WithBody(index),
 	)
 	if err != nil {
 		log.Fatalf("Error creating index: %s", err)

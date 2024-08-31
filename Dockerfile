@@ -7,6 +7,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . ./
+COPY .datasets /.datasets
+COPY cmd/server/http/web/templates /cmd/server/http/web/templates
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /server
 
@@ -20,6 +22,8 @@ FROM gcr.io/distroless/base-debian11 AS build-release-stage
 WORKDIR /
 
 COPY --from=build-stage /server /server
+COPY --from=build-stage /.datasets /.datasets
+COPY --from=build-stage /cmd/server/http/web/templates /cmd/server/http/web/templates
 
 EXPOSE 8888
 
