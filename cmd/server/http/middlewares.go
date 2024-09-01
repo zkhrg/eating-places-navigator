@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/zkhrg/go_day03/internal/api"
 )
@@ -11,9 +12,10 @@ import (
 type contextKey string
 
 const (
-	PageContextKey contextKey = "page"
-	LatContextKey  contextKey = "lat"
-	LonContextKey  contextKey = "lon"
+	PageContextKey     contextKey = "page"
+	LatContextKey      contextKey = "lat"
+	LonContextKey      contextKey = "lon"
+	UsernameContextKey contextKey = "username"
 )
 
 func ChainMiddleware(handler http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
@@ -92,5 +94,60 @@ func GetMethodMiddleware(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+func PostMethodMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func ValidateTokenMiddleware(a *api.API) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+				return
+			}
+
+			parts := strings.Split(authHeader, " ")
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				http.Error(w, "Invalid Authorization header format", http.StatusUnauthorized)
+				return
+			}
+			token := parts[1]
+
+			// Проверка токена
+			tokenValid := a.ValidateToken(token)
+			if !tokenValid {
+				http.Error(w, "Invalid token", http.StatusUnauthorized)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func UsernameMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Получаем значение параметра `username`
+		usernameParam := r.URL.Query().Get("username")
+
+		// Проверяем наличие параметра `username`
+		if usernameParam == "" {
+			http.Error(w, "Missing 'username' parameter", http.StatusBadRequest)
+			return
+		}
+
+		// Передаем параметр `username` в контексте
+		ctx := context.WithValue(r.Context(), UsernameContextKey, usernameParam)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

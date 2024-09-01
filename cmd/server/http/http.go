@@ -23,10 +23,18 @@ func AddPlacesRoutes(a *api.API, mux *http.ServeMux) {
 	JSONRecommendChain := ChainMiddleware(
 		NearestPlacesHandler(a),
 		GetMethodMiddleware,
+		ValidateTokenMiddleware(a),
 		LatLonMiddleware,
+	)
+
+	getTokenChain := ChainMiddleware(
+		generateTokenHandler(a),
+		GetMethodMiddleware,
+		UsernameMiddleware,
 	)
 
 	mux.Handle("/api/recommend/{$}", JSONRecommendChain)
 	mux.Handle("/api/places/{$}", JSONPaginatedChain)
+	mux.Handle("/api/get_token/{$}", getTokenChain)
 	mux.Handle("/{$}", HTMLPaginatedChain)
 }
