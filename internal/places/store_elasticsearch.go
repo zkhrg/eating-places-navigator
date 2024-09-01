@@ -246,7 +246,7 @@ func (ess *esstore) IndexingPlaces() {
 		"Latitude":  "location.lat",
 		"ID":        "id",
 	}
-	file, err := os.Open("./.datasets/data.csv")
+	file, err := os.Open("./datasets/data.csv")
 	if err != nil {
 		log.Fatalf("error opening csv file: %s", err)
 	}
