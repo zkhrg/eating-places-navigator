@@ -26,7 +26,7 @@ func AddPlacesRoutes(a *api.API, mux *http.ServeMux) {
 		LatLonMiddleware,
 	)
 
-	mux.Handle("/api/recommend", JSONRecommendChain)
-	mux.Handle("/api/places", JSONPaginatedChain)
-	mux.Handle("/", HTMLPaginatedChain)
+	mux.Handle("/api/recommend/{$}", JSONRecommendChain)
+	mux.Handle("/api/places/{$}", JSONPaginatedChain)
+	mux.Handle("/{$}", HTMLPaginatedChain)
 }

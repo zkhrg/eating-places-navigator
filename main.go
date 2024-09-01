@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -21,7 +20,7 @@ func main() {
 
 	es, err := elasticsearch.NewClient(cfgs.Elasticsearch())
 	for err != nil {
-		fmt.Printf("cannot create new es client retry after 5 sec\n")
+		log.Printf("cannot create new es client retry after 5 sec\n")
 		time.Sleep(5 * time.Second)
 		es, err = elasticsearch.NewClient(cfgs.Elasticsearch())
 	}
@@ -31,6 +30,11 @@ func main() {
 	placesAPI := api.NewStoreAPI(ess)
 	mainMux := http.NewServeMux()
 	myHttp.AddPlacesRoutes(placesAPI, mainMux)
+
+	// handle not existsing pages after add all routes
+	mainMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	})
 
 	log.Println("Starting server on :8888")
 	if err := http.ListenAndServe(":8888", mainMux); err != nil {
