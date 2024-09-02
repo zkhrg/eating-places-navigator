@@ -1,6 +1,6 @@
 # Day 03 - Go Boot camp
 
-## [README_RUS](./README_RUS.md)
+## [TASK_RUS](./TASK_RUS.md)
 
 ## Contents
 
