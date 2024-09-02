@@ -36,8 +36,7 @@ This project includes:
 
 2. Start the project using Docker Compose:
     ```bash
-    cd go_day03
-    docker-compose up
+    cd go_day03 && docker compose up
     ```
 
 3. The API will be available at `http://localhost:8888`.
