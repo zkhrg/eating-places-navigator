@@ -33,11 +33,7 @@ This project includes:
   </tr>
 </table> 
 
-
-
 ## Getting Started
-
-
 
 ### Prerequisites
 
@@ -60,6 +56,7 @@ This project includes:
 
 ## Usage
 
+Go to `/swagger/` route and try out all features yourself
 The API provides endpoints to interact with the data loaded into the system. You can test the API using tools like Postman or `curl`.
 
 ## License
