@@ -19,8 +19,25 @@ This project includes:
 - **Modular Architecture:** Modular code organization following best practices.
 - **Dockerized:** Easily deployable using Docker. Simply run `docker-compose up` to start the application.
 - **RESTful API:** Implements a basic but fully functional REST API with standard HTTP methods.
+- **Swagger Docs** Implemented documentation generation using swagger 2.0 and openAPI. at `/swagger/`
+- **Auth** for secure endpoint `/api/recommend/`.
+
+ <table>
+  <tr>
+    <th>Routes</th>
+  </tr>
+  <tr>
+    <td>
+        <img width="1469" alt="image" src="https://github.com/user-attachments/assets/764d6655-d838-4ef9-9b1b-647bfc88056a">
+    </td>
+  </tr>
+</table> 
+
+
 
 ## Getting Started
+
+
 
 ### Prerequisites
 
