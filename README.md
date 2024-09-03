@@ -1,4 +1,4 @@
-# Go Bootcamp Project - Day 03
+# Eating places navigator (Go Bootcamp Project - Day 03)
 
 This project was developed as part of the Go Bootcamp, focusing on creating a simple API with data loading, getting data from store(interface hidden elasticsearch), simple auth and find places using elasticsearch engine.
 In project parse data from data.csv about eating places at Moscow and push this data using go-routines to elasticsearch.
