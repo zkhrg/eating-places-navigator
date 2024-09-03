@@ -8,6 +8,7 @@ RUN go mod download
 
 COPY . ./
 COPY datasets /datasets
+COPY docs /docs
 COPY cmd/server/http/web/templates /cmd/server/http/web/templates
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /server
@@ -24,6 +25,7 @@ WORKDIR /
 COPY --from=build-stage /server /server
 COPY --from=build-stage /datasets /datasets
 COPY --from=build-stage /cmd/server/http/web/templates /cmd/server/http/web/templates
+COPY --from=build-stage /docs /docs
 
 EXPOSE 8888
 

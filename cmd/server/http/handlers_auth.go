@@ -7,6 +7,18 @@ import (
 	"github.com/zkhrg/go_day03/internal/api"
 )
 
+// @title My API
+// @version 1.0
+// @description This is a sample server.
+// @BasePath /api
+
+// @Summary Generete token by provided username
+// @Description Generete JWT token by provided username
+// @Tags token
+// @Produce json
+// @Param username query string false "Username whos requesting a token"
+// @Success 200 {string} string
+// @Router /api/get_token/ [get]
 func generateTokenHandler(a *api.API) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		username, err := a.GetTokenByName(r.Context().Value(UsernameContextKey).(string))

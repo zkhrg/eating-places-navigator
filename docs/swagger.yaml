@@ -1,0 +1,110 @@
+definitions:
+  api.Page:
+    properties:
+      last_page:
+        type: integer
+      name:
+        type: string
+      next_page:
+        type: integer
+      places:
+        items:
+          $ref: '#/definitions/places.Place'
+        type: array
+      prev_page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  places.Place:
+    properties:
+      address:
+        type: string
+      id:
+        type: integer
+      location:
+        properties:
+          lat:
+            type: number
+          lon:
+            type: number
+        type: object
+      name:
+        type: string
+      phone:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/get_token/:
+    get:
+      description: Generete JWT token by provided username
+      parameters:
+      - description: Username whos requesting a token
+        in: query
+        name: username
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Generete token by provided username
+      tags:
+      - token
+  /api/places/:
+    get:
+      description: Get a page of places with pagination
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Page'
+            type: array
+      summary: Get a page of places
+      tags:
+      - places
+  /api/recommend/:
+    get:
+      description: Get a 3 nearest eating places by lat and lon params using arc formula
+      parameters:
+      - description: latitude
+        in: query
+        name: lat
+        type: number
+      - description: longitude
+        in: query
+        name: lon
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/places.Place'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get a 3 nearest eating places by lat and lon params
+      tags:
+      - recommendations
+securityDefinitions:
+  BearerAuth:
+    description: Bearer token authentication. Type `Bearer <token>` to auth.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

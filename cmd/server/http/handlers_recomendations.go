@@ -8,6 +8,15 @@ import (
 	"github.com/zkhrg/go_day03/internal/api"
 )
 
+// @Summary Get a 3 nearest eating places by lat and lon params
+// @Description Get a 3 nearest eating places by lat and lon params using arc formula
+// @Tags recommendations
+// @Produce json
+// @Param lat query float64 false "latitude"
+// @Param lon query float64 false "longitude"
+// @Success 200 {array} places.Place
+// @Security BearerAuth
+// @Router /api/recommend/ [get]
 func NearestPlacesHandler(a *api.API) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		lat := r.Context().Value(LatContextKey).(float64)

@@ -32,6 +32,18 @@ func HTMLPageHandler(a *api.API) http.HandlerFunc {
 	}
 }
 
+// @title My API
+// @version 1.0
+// @description This is a sample server.
+// @BasePath /api
+
+// @Summary Get a page of places
+// @Description Get a page of places with pagination
+// @Tags places
+// @Produce json
+// @Param page query int false "Page number"
+// @Success 200 {array} api.Page
+// @Router /api/places/ [get]
 func JSONPageHandler(a *api.API) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		page, err := a.GetPage(r.Context(), r.Context().Value(PageContextKey).(int), 10)
